@@ -1,0 +1,15 @@
+{
+    "python.autoComplete.extraPaths": [],
+    "python.analysis.extraPaths": [],
+    "flake8.ignorePatterns": [
+        ".vscode/*.py",
+        "**/site-packages/**/*.py",
+        ".venv/**/*.py",
+        ".pytest_cache/**/*.py"
+    ],
+    "[python]": { // Here
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        }
+    },
+}

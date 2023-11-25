@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "tablo-saver"
+version = "0.1.0"
+description = "Save recordings from tablo external drive"
+authors = ["Your Name <you@example.com>"]
+license = "GPL"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+loguru = "^0.7.2"
+dataclasses-json = "^0.6.2"
+
+[tool.poetry.group.dev.dependencies]
+rope = "^1.11.0"
+wemake-python-styleguide = "^0.18.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
