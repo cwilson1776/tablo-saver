@@ -138,7 +138,11 @@ def execute(cmd: list[str]):
         raise subprocess.CalledProcessError(return_code, cmd)
 
 
-def do_merge(segment_list: pathlib.Path, output_file: pathlib.Path):
+def do_merge(
+    segment_list: pathlib.Path,
+    output_file: pathlib.Path,
+    overwrite: bool,
+) -> bool:
     """Merge the ts segments in segment_list to the target output_file."""
     command = [
         'ffmpeg',
@@ -163,16 +167,26 @@ def do_merge(segment_list: pathlib.Path, output_file: pathlib.Path):
     logger.info(f'The output MP4 video file will be placed in: {output_file}')
 
     for line in execute(command):
-        print(line, end='')
+        logger.debug(line, end='')
 
     logger.info('ffmpeg concatenation of files complete.')
     segment_list.unlink()
+    return True
 
 
-def process(recording_path: pathlib.Path, outfile: pathlib.Path):
+def process(
+    recording_path: pathlib.Path,
+    outfile: pathlib.Path,
+    overwrite: bool,
+) -> int:
     """Process a tablo recording to produce a merged output file."""
+    if outfile.exists() and not overwrite:
+        logger.warning(f'Output file already exists, skipping: {outfile}')
+        return -2
+
+    logger.success(f'   Processing {recording_path} -> {outfile}')
     segment_list = prepare_segment_list(recording_path)
-    do_merge(segment_list, outfile)
+    return 0 if do_merge(segment_list, outfile, overwrite) else -1
 
 
 if __name__ == '__main__':
@@ -195,4 +209,4 @@ if __name__ == '__main__':
         video_folder_id,
     ).with_suffix('.mp4')
 
-    process(recording_path, outfile)
+    process(recording_path, outfile, overwrite=True)

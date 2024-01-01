@@ -215,10 +215,11 @@ def update_metadata(video_file: pathlib.Path, recording_info: 'Recording'):
     command.extend(args)
     command.extend([video_file])
 
+    logger.success(f'  Updating metadata for {video_file}')
     logger.debug(command)
     # run mp4tags command...
     for line in execute(command):
-        print(line, end='')
+        logger.debug(line, end='')
 
 
 if __name__ == '__main__':

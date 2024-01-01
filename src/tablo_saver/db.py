@@ -69,10 +69,10 @@ def read_recordings(db_file: pathlib.Path) -> list[dict]:
     query = (
         'SELECT ' +  # noqa: S608
         ', '.join(RECORDING_FIELDS) +
-        ' FROM Recording ' +
-        'WHERE recordingID > 0 ' +
-        'AND LENGTH(DateDeleted) < 1 ' +
-        'ORDER BY title'
+        ' FROM Recording' +
+        ' WHERE ID > 0' +
+        ' AND LENGTH(DateDeleted) < 1' +
+        ' ORDER BY title'
     )
     with closing(sqlite3.connect(database=make_uri(db_file), uri=True)) as conn:
         with conn:  # as transaction
@@ -81,6 +81,26 @@ def read_recordings(db_file: pathlib.Path) -> list[dict]:
                 all_rows = cur.execute(query).fetchall()
 
     return all_rows
+
+
+def read_one_recording(db_file: pathlib.Path, r_id: int) -> dict:
+    """Reads the Tablo DB and returns a one record from Recording."""
+    query = (
+        'SELECT ' +  # noqa: S608
+        ', '.join(RECORDING_FIELDS) +
+        ' FROM Recording' +
+        ' WHERE ID = ' +
+        str(r_id) +
+        ' AND LENGTH(DateDeleted) < 1' +
+        ' ORDER BY title'
+    )
+    with closing(sqlite3.connect(database=make_uri(db_file), uri=True)) as conn:
+        with conn:  # as transaction
+            conn.row_factory = dict_factory
+            with closing(conn.cursor()) as cur:
+                row = cur.execute(query).fetchone()
+
+    return row
 
 
 def read_channels(db_file: pathlib.Path) -> list[dict]:
@@ -88,8 +108,8 @@ def read_channels(db_file: pathlib.Path) -> list[dict]:
     query = (
         'SELECT ' +  # noqa: S608
         ', '.join(CHANNEL_FIELDS) +
-        ' FROM Channel ' +
-        'ORDER BY ID'
+        ' FROM Channel' +
+        ' ORDER BY ID'
     )
     with closing(sqlite3.connect(database=make_uri(db_file), uri=True)) as conn:
         with conn:  # as transaction
@@ -98,6 +118,25 @@ def read_channels(db_file: pathlib.Path) -> list[dict]:
                 all_rows = cur.execute(query).fetchall()
 
     return all_rows
+
+
+def read_one_channel(db_file: pathlib.Path, chan_id: int) -> dict:
+    """Reads the Tablo DB and returns a list of records from Channel."""
+    query = (
+        'SELECT ' +  # noqa: S608
+        ', '.join(CHANNEL_FIELDS) +
+        ' FROM Channel ' +
+        ' WHERE ID = ' +
+        str(chan_id) +
+        ' ORDER BY ID'
+    )
+    with closing(sqlite3.connect(database=make_uri(db_file), uri=True)) as conn:
+        with conn:  # as transaction
+            conn.row_factory = dict_factory
+            with closing(conn.cursor()) as cur:
+                row = cur.execute(query).fetchone()
+
+    return row
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL)
@@ -280,14 +319,38 @@ def get_recording_info(
     return recording_result
 
 
+def get_single_recording_info(db_file: pathlib.Path, r_id: int) -> 'Recording':
+    """Retrieve metadata for a recording from the Tablo db."""
+    recording_data = read_one_recording(db_file, r_id)
+    if not recording_data:
+        logger.error(f'No data found for recording {r_id}')
+        return None
+
+    recording_result = Recording.fromdict({**recording_data})
+    channel_data = read_one_channel(db_file, recording_result.channel_id)
+    if not channel_data:
+        logger.error(
+            'No channel information found for ' +
+            f'channel_id={recording_result.channel_id}',
+        )
+        return None
+
+    recording_result.update_channel_info([channel_data], overwrite=False)
+    recording_result.update_from_json(overwrite=False)
+    logger.debug(json.dumps(asdict(recording_result)))
+    return recording_result
+
+
 if __name__ == '__main__':
     TEST_RECORDING_ID = 2494457
-    table_db = pathlib.Path.home().joinpath('Tablo.db')
-    recording_data = read_recordings(table_db)
-    channel_data = read_channels(table_db)
+    tablo_db = pathlib.Path.home().joinpath('Tablo.db')
+    recording_data = read_recordings(tablo_db)
+    channel_data = read_channels(tablo_db)
     r_info = get_recording_info(recording_data, channel_data, TEST_RECORDING_ID)
     str_json = r_info.to_json()
     r_info2 = Recording.from_json(str_json)
 
     print(json.dumps(asdict(r_info), indent=4))
     print(json.dumps(asdict(r_info2), indent=4))
+
+    r_info3 = get_single_recording_info(tablo_db, 2494457)

@@ -66,8 +66,8 @@ def make_logstr_rdict(r_id: int, rd: dict) -> str:
 
 def report_all(db_file: pathlib.Path, tablo_mount_path: pathlib.Path) -> None:
     """Report information about all recordings in Tablo db."""
-    recording_data = tablo_saver.db.read_recordings(table_db)
-    channel_data = tablo_saver.db.read_channels(table_db)
+    recording_data = tablo_saver.db.read_recordings(db_file)
+    channel_data = tablo_saver.db.read_channels(db_file)
     for rd in recording_data:
         r_id = rd.get('ID')
         # make the full recording path by adding /rec , /recording_id, "/segs"
@@ -95,6 +95,7 @@ def report_all(db_file: pathlib.Path, tablo_mount_path: pathlib.Path) -> None:
             logger.info(f'{logstr} ({tsnum})')
             logger.info(f'    top cast = {rinfo.top_cast}')
             logger.info(f'    full cast = {rinfo.full_cast}')
+            logger.info(f'    res = {rinfo.resolution_title}')
         else:
             logger.warning(f'No segment dir: {logstr}')
 
@@ -104,5 +105,5 @@ if __name__ == '__main__':
     # On Ubuntu right-click hard-drive icon and properties, or use Disks tool
     tablo_mountpoint = '/media/osboxes/c6b87b95-7b93-46c8-bccb-b75c9c7f0841'
     mount_path = pathlib.Path(tablo_mountpoint)
-    table_db = pathlib.Path.home().joinpath('Tablo.db')
-    report_all(table_db, mount_path)
+    tablo_db = pathlib.Path.home().joinpath('Tablo.db')
+    report_all(tablo_db, mount_path)
